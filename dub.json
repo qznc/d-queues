@@ -1,0 +1,6 @@
+{
+    "name": "queues",
+    "targetName": "queues",
+    "targetType": "staticLibrary",
+    "targetPath": "lib"
+}
