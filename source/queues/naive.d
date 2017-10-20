@@ -44,13 +44,13 @@ unittest {
     import std.range;
     import std.stdio;
     import core.thread;
-    alias Q = NaiveThreadsafeQueue!int;
-    auto q = new Q();
-    enum count = 10;
+    import fluent.asserts;
+    auto q = new NaiveThreadsafeQueue!int();
+    enum count = 1000;
     auto t1 = new Thread({
         foreach(d; 0 .. count) {
-            auto x = q.dequeue();
-            assert (x == d);
+            (q.dequeue()).should.equal(d)
+                .because("the other thread put that into the queue");
         }
     });
     auto t2 = new Thread({
