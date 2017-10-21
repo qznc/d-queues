@@ -5,6 +5,11 @@ import queues;
 import core.sync.mutex : Mutex;
 import core.atomic;
 
+private static class Cons(T) {
+    public Cons!T nxt;
+    public T value;
+}
+
 /*** blocking multi-producer multi-consumer queue 
     from "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms"
     by Maged and Michael. "*/
@@ -13,11 +18,6 @@ class MagedBlockingQueue(T) : Queue!T {
     private Cons!T tail;
     private Mutex head_lock;
     private Mutex tail_lock;
-
-    private static class Cons(T) {
-        public Cons!T nxt;
-        public T value;
-    }
 
     this() {
         auto n = new Cons!T();
@@ -62,12 +62,66 @@ class MagedBlockingQueue(T) : Queue!T {
     }
 }
 
+/*** non-blocking multi-producer multi-consumer queue 
+    from "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms"
+    by Maged and Michael. "*/
+class MagedNonBlockingQueue(T) : Queue!T {
+    private shared(Cons!T) head;
+    private shared(Cons!T) tail;
+
+    this() {
+        shared n = new Cons!T();
+        this.head = this.tail = n;
+    }
+    void enqueue(T t) {
+        shared end = new Cons!T();
+        end.value = t;
+        while (true) {
+            auto tl = tail;
+            auto cur = tl.nxt;
+            if (cur !is null) {
+                // obsolete tail, try update
+                cas(&this.tail, tl, cur);
+                continue;
+            }
+            shared(Cons!T) dummy = null;
+            if (cas(&tl.nxt, dummy, end)) {
+                // successfull enqueued new end node
+                break;
+            }
+        }
+    }
+    T dequeue() {
+        T e = void;
+        while (!tryDequeue(e)) { }
+        return e;
+    }
+    bool tryDequeue(out T e) {
+        auto dummy = this.head;
+        auto tl = this.tail;
+        auto nxt = dummy.nxt;
+        if (dummy is tl) {
+            if (nxt is null) { /* queue empty */
+                return false;
+            } else { /* tail is obsolete */
+                cas(&this.tail, tl, nxt);
+            }
+        } else {
+            if (cas(&this.head, dummy, nxt)) {
+                e = nxt.value;
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 unittest {
     import std.range;
     import std.stdio;
     import core.thread;
     import fluent.asserts;
-    auto q = new MagedBlockingQueue!int();
+    auto q = new MagedNonBlockingQueue!int();
     enum count = 1000;
     auto t1 = new Thread({
         foreach(d; 0 .. count) {
