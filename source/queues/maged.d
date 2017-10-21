@@ -2,6 +2,7 @@ module queues.maged;
 
 import queues;
 
+import std.meta : AliasSeq;
 import core.sync.mutex : Mutex;
 import core.atomic;
 
@@ -116,25 +117,28 @@ class MagedNonBlockingQueue(T) : Queue!T {
     }
 }
 
-unittest {
-    import std.range;
-    import std.stdio;
-    import core.thread;
-    import fluent.asserts;
-    auto q = new MagedNonBlockingQueue!int();
-    enum count = 1000;
-    auto t1 = new Thread({
-        foreach(d; 0 .. count) {
-            (q.dequeue()).should.equal(d)
+static foreach (Q; AliasSeq!(MagedBlockingQueue, MagedNonBlockingQueue))
+{
+    unittest {
+        import std.range;
+        import std.stdio;
+        import core.thread;
+        import fluent.asserts;
+        auto q = new Q!int();
+        enum count = 1000;
+        auto t1 = new Thread({
+                foreach(d; 0 .. count) {
+                (q.dequeue()).should.equal(d)
                 .because("the other thread put that into the queue");
-        }
-    });
-    auto t2 = new Thread({
-        foreach(d; 0 .. count)
-            q.enqueue(d);
-    });
-    t1.start();
-    t2.start();
-    t1.join();
-    t2.join();
+                }
+                });
+        auto t2 = new Thread({
+                foreach(d; 0 .. count)
+                q.enqueue(d);
+                });
+        t1.start();
+        t2.start();
+        t1.join();
+        t2.join();
+    }
 }
