@@ -10,9 +10,7 @@ Here are the variants and letters for naming FIFO queues:
 
 That means we get the following variants:
 
-* SPSC queue, which is a naive unsynchronized queue.
-  It makes little sense, to make it lock-free or bounded,
-  since the absence of parallelism makes this trivial.
+* SPSC queue synchronizes between reader and writer
 * MPMC queue is simply synchronized.
   Not bounded and not lock-free.
 * LMPMC queue is lock-free, which implicitly means a changed interface.
