@@ -129,13 +129,13 @@ void test_run(alias Q)(uint writers, uint readers, uint count)
     import std.stdio;
     import core.thread;
     import core.sync.barrier : Barrier;
+    import std.bigint : BigInt;
     import fluent.asserts;
     /* compute desired sum via Gauss formula */
-    import std.experimental.checkedint;
-    long correct_sum = (checked(count) * (count-1) / 2 * writers).get();
+    BigInt correct_sum = BigInt(count) * BigInt(count-1) / 2 * writers;
     /* compute sum via multiple threads and one queue */
+    BigInt sum = 0;
     auto b = new Barrier(writers + readers);
-    shared long sum = 0;
     auto q = new Q!long();
     auto w = new Thread({
             Thread[] ts;
@@ -155,11 +155,13 @@ void test_run(alias Q)(uint writers, uint readers, uint count)
             Thread[] ts;
             foreach(i; 0 .. writers) {
                 auto t = new Thread({
+                        BigInt s = 0;
                         b.wait();
                         foreach(_; 1 .. count) {
                             auto n = q.dequeue();
-                            sum.atomicOp!"+="(n);
+                            s += n;
                         }
+                        synchronized { sum += s; }
                         });
                 t.start();
                 ts ~= t;
@@ -174,7 +176,7 @@ void test_run(alias Q)(uint writers, uint readers, uint count)
 }
 
 unittest {
-    test_run!(MagedNonBlockingQueue)(100,100,1000);
+    test_run!(MagedNonBlockingQueue)(100,100,100000);
 }
 
 static foreach (Q; AliasSeq!(MagedBlockingQueue, MagedNonBlockingQueue))
