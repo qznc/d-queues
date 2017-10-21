@@ -20,16 +20,16 @@ interface Queue(T) {
 }
 
 static foreach (Q; AliasSeq!(
-            NaiveThreadsafeQueue,
-            MagedBlockingQueue,
-            MagedNonBlockingQueue))
+            NaiveThreadsafeQueue!int,
+            NaiveBoundedThreadsafeQueue!(int,10),
+            MagedBlockingQueue!int,
+            MagedNonBlockingQueue!int))
 {
     unittest {
         import std.range;
-        import std.stdio;
         import core.thread;
         import fluent.asserts;
-        auto q = new Q!int();
+        auto q = new Q();
         enum count = 1000;
         auto t1 = new Thread({
                 foreach(d; 0 .. count) {
@@ -39,7 +39,7 @@ static foreach (Q; AliasSeq!(
                 });
         auto t2 = new Thread({
                 foreach(d; 0 .. count)
-                q.enqueue(d);
+                    q.enqueue(d);
                 });
         t1.start();
         t2.start();
@@ -57,7 +57,6 @@ static foreach (Q; AliasSeq!(
 void test_run(alias Q)(uint writers, uint readers, uint count)
 {
     import std.range;
-    import std.stdio;
     import core.thread;
     import core.sync.barrier : Barrier;
     import std.bigint : BigInt;
@@ -67,7 +66,7 @@ void test_run(alias Q)(uint writers, uint readers, uint count)
     /* compute sum via multiple threads and one queue */
     BigInt sum = 0;
     auto b = new Barrier(writers + readers);
-    auto q = new Q!long();
+    auto q = new Q();
     auto w = new Thread({
             Thread[] ts;
             foreach(i; 0 .. writers) {
@@ -106,17 +105,21 @@ void test_run(alias Q)(uint writers, uint readers, uint count)
     sum.should.equal(correct_sum);
 }
 
+/*** Exemplary benchmarking */
 unittest {
-    import std.stdio;
     import std.datetime.stopwatch : benchmark;
     enum readers = 10;
     enum writers = 10;
+    enum bnd = 10; // size for bounded queues
     enum count = 10000; // too small, so only functional test
-    void f0() { test_run!NaiveThreadsafeQueue (writers,readers,count); }
-    void f1() { test_run!MagedBlockingQueue   (writers,readers,count); }
-    void f2() { test_run!MagedNonBlockingQueue(writers,readers,count); }
-    auto r = benchmark!(f0, f1, f2)(3);
+    void f0() { test_run!(NaiveThreadsafeQueue!long)              (writers,readers,count); }
+    void f1() { test_run!(NaiveBoundedThreadsafeQueue!(long,bnd)) (writers,readers,count); }
+    void f2() { test_run!(MagedBlockingQueue!long)                (writers,readers,count); }
+    void f3() { test_run!(MagedNonBlockingQueue!long)             (writers,readers,count); }
+    auto r = benchmark!(f0, f1, f2, f3)(3);
+    //import std.stdio;
     //writeln(r[0]);
     //writeln(r[1]);
     //writeln(r[2]);
+    //writeln(r[3]);
 }
