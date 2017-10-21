@@ -1,3 +1,6 @@
+/*** Implementations based on the paper
+    "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms"
+    by Maged and Michael. "*/
 module queues.maged;
 
 import queues;
@@ -11,9 +14,7 @@ private static class Cons(T) {
     public T value;
 }
 
-/*** blocking multi-producer multi-consumer queue 
-    from "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms"
-    by Maged and Michael. "*/
+/*** blocking multi-producer multi-consumer queue  */
 class MagedBlockingQueue(T) : Queue!T {
     private Cons!T head;
     private Cons!T tail;
@@ -63,9 +64,7 @@ class MagedBlockingQueue(T) : Queue!T {
     }
 }
 
-/*** non-blocking multi-producer multi-consumer queue 
-    from "Simple, fast, and practical non-blocking and blocking concurrent queue algorithms"
-    by Maged and Michael. "*/
+/*** non-blocking multi-producer multi-consumer queue  */
 class MagedNonBlockingQueue(T) : Queue!T {
     private shared(Cons!T) head;
     private shared(Cons!T) tail;
