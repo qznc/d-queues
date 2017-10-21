@@ -1,12 +1,29 @@
 # Synchronized Queues
 
-There are so many variants and I want to implement all of them.
-Here are the variants and letters for naming FIFO queues:
+There are so many variants and I want to implement a few.
 
-* lock-free or blocking (L)
-* bounded or unbounded (B)
-* single or multiple producer (SP/MP)
-* single or multiple consumer (SC/MC)
+## Current State
+
+* There is a naive bounded and unbounded queue.
+* Implemented the paper [Simple, fast, and practical non-blocking and blocking concurrent queue algorithms](https://dl.acm.org/citation.cfm?id=248106).
+
+I'm not confident that everything is correct yet.
+There are only a few tests.
+So, **not production ready**!
+
+## Naming Scheme
+
+Here are some variants and letters for naming FIFO queues:
+
+* Lock-free (L) or blocking:
+  Blocking means that kernel-level locks are used,
+  while lock-free algorithms use instructions like Compare-And-Swap.
+* Bounded or unbounded (B):
+  Bounded queues have a constant memory need.
+* Single or multiple producer (SP/MP)
+  Only supporting a single producer allows higher speed.
+* Single or multiple consumer (SC/MC)
+  Only supporting a single consumer allows higher speed.
 
 That means we get the following variants:
 
@@ -29,3 +46,7 @@ That means we get the following variants:
 * LMPSC
 * BMPSC
 * LBMPSC
+
+The next level would be sorted (priority) queues.
+Another aspect is memory management,
+because relying on the garbage collector is the easy way out.
