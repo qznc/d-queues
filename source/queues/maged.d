@@ -117,6 +117,66 @@ class MagedNonBlockingQueue(T) : Queue!T {
     }
 }
 
+/***
+  Start `writers` amount of threads to write into a queue.
+  Start `readers` amount of threads to read from the queue.
+  Each writer counts from 0 to `count` and sends each number into the queue.
+  The sum is checked at the end.
+*/
+void test_run(alias Q)(uint writers, uint readers, uint count)
+{
+    import std.range;
+    import std.stdio;
+    import core.thread;
+    import core.sync.barrier : Barrier;
+    import fluent.asserts;
+    /* compute desired sum via Gauss formula */
+    import std.experimental.checkedint;
+    long correct_sum = (checked(count) * (count-1) / 2 * writers).get();
+    /* compute sum via multiple threads and one queue */
+    auto b = new Barrier(writers + readers);
+    shared long sum = 0;
+    auto q = new Q!long();
+    auto w = new Thread({
+            Thread[] ts;
+            foreach(i; 0 .. writers) {
+                auto t = new Thread({
+                        b.wait();
+                        foreach(n; 1 .. count) {
+                            q.enqueue(n);
+                        }
+                        });
+                t.start();
+                ts ~= t;
+            }
+            foreach(t; ts) { t.join(); }
+            });
+    auto r = new Thread({
+            Thread[] ts;
+            foreach(i; 0 .. writers) {
+                auto t = new Thread({
+                        b.wait();
+                        foreach(_; 1 .. count) {
+                            auto n = q.dequeue();
+                            sum.atomicOp!"+="(n);
+                        }
+                        });
+                t.start();
+                ts ~= t;
+            }
+            foreach(t; ts) { t.join(); }
+            });
+    w.start();
+    r.start();
+    w.join();
+    r.join();
+    sum.should.equal(correct_sum);
+}
+
+unittest {
+    test_run!(MagedNonBlockingQueue)(100,100,1000);
+}
+
 static foreach (Q; AliasSeq!(MagedBlockingQueue, MagedNonBlockingQueue))
 {
     unittest {
