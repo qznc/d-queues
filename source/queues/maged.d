@@ -175,11 +175,23 @@ void test_run(alias Q)(uint writers, uint readers, uint count)
     sum.should.equal(correct_sum);
 }
 
+import queues.naive : NaiveThreadsafeQueue;
 unittest {
-    test_run!(MagedNonBlockingQueue)(100,100,100000);
+    import std.stdio;
+    import std.datetime.stopwatch : benchmark;
+    enum readers = 10;
+    enum writers = 10;
+    enum count = 200000;
+    void f0() { test_run!NaiveThreadsafeQueue (writers,readers,count); }
+    void f1() { test_run!MagedBlockingQueue   (writers,readers,count); }
+    void f2() { test_run!MagedNonBlockingQueue(writers,readers,count); }
+    auto r = benchmark!(f0, f1, f2)(5);
+    writeln(r[0]);
+    writeln(r[1]);
+    writeln(r[2]);
 }
 
-static foreach (Q; AliasSeq!(MagedBlockingQueue, MagedNonBlockingQueue))
+static foreach (Q; AliasSeq!(NaiveThreadsafeQueue, MagedBlockingQueue, MagedNonBlockingQueue))
 {
     unittest {
         import std.range;
