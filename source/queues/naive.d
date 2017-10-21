@@ -39,26 +39,3 @@ class NaiveThreadsafeQueue(T) : Queue!T {
         return false;
     }
 }
-
-unittest {
-    import std.range;
-    import std.stdio;
-    import core.thread;
-    import fluent.asserts;
-    auto q = new NaiveThreadsafeQueue!int();
-    enum count = 1000;
-    auto t1 = new Thread({
-        foreach(d; 0 .. count) {
-            (q.dequeue()).should.equal(d)
-                .because("the other thread put that into the queue");
-        }
-    });
-    auto t2 = new Thread({
-        foreach(d; 0 .. count)
-            q.enqueue(d);
-    });
-    t1.start();
-    t2.start();
-    t1.join();
-    t2.join();
-}
