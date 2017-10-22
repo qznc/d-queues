@@ -5,7 +5,6 @@ module queues.maged;
 
 import queues;
 
-import std.meta : AliasSeq;
 import core.sync.mutex : Mutex;
 import core.atomic;
 

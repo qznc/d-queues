@@ -1,7 +1,7 @@
 {
     "name": "queues",
     "targetName": "queues",
-    "targetType": "staticLibrary",
+    "XXXtargetType": "staticLibrary",
     "targetPath": "lib",
     "dependencies": {
       "fluent-asserts": ">=0.7.0"
